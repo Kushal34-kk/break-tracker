@@ -1,39 +1,38 @@
 <!DOCTYPE html><html>
 <head>
+<meta charset="UTF-8">
 <title>21-Day Break Tracker</title><style>
 body{
-font-family:Arial,sans-serif;
-padding:20px;
+  font-family: Arial, sans-serif;
+  margin:40px;
 }
 
-input{
-margin:5px;
-padding:5px;
+input,button{
+  padding:8px;
+  margin:5px;
 }
 
 table{
-border-collapse:collapse;
-margin-top:20px;
-width:100%;
+  width:100%;
+  border-collapse:collapse;
+  margin-top:20px;
 }
 
 th,td{
-border:1px solid black;
-padding:8px;
-text-align:center;
+  border:1px solid #ccc;
+  padding:10px;
+  text-align:center;
 }
 
-button{
-padding:8px 15px;
-margin:5px;
+h2{
+  margin-top:30px;
 }
-</style></head><body><h1>21-Day Break Tracker</h1><button id="loginBtn">
-Login With Google
-</button><p id="userInfo">
-Not Logged In
-</p><hr><h2>Day 1</h2><input id="appName" placeholder="App Name"><input id="startTime" type="time"><input id="endTime" type="time"><button id="addEntry">
-Add Entry
-</button><table><thead>
+</style></head>
+<body><h1>21-Day Break Tracker</h1><button id="loginBtn">Login With Google</button>
+
+<p id="userInfo">Not Logged In</p><hr><h2 id="dayHeading">Day 1</h2><input type="text" id="appName" placeholder="App Name"><input type="time" id="startTime"><input type="time" id="endTime"><button id="addBtn">Add Entry</button>
+
+<table><thead>
 <tr>
 <th>App Name</th>
 <th>Start Time</th>
@@ -41,23 +40,29 @@ Add Entry
 <th>Duration (Min)</th>
 </tr>
 </thead><tbody id="tableBody">
-</tbody></table><h3 id="totalTime">
+</tbody></table><h3 id="totalToday">
 Total Today: 0 Min
 </h3><script type="module">
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
 
 import {
 getAuth,
 GoogleAuthProvider,
 signInWithPopup
-} from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
+}
+from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
 
 import {
 getFirestore,
 doc,
-setDoc
-} from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+setDoc,
+collection,
+addDoc,
+getDocs
+}
+from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
 const firebaseConfig = {
 
@@ -83,66 +88,27 @@ const db = getFirestore(app);
 
 const provider = new GoogleAuthProvider();
 
-let totalMinutes = 0;
+let currentUser = null;
 
-document.getElementById("loginBtn").onclick = async () => {
+function durationMinutes(start,end){
 
-const result = await signInWithPopup(auth, provider);
+const s =
+new Date("2000-01-01T"+start);
 
-const user = result.user;
+const e =
+new Date("2000-01-01T"+end);
 
-await setDoc(
-doc(db, "users", user.uid),
-{
-name: user.displayName,
-email: user.email,
-currentDay: 1,
-cycleNumber: 1,
-cycleStartDate: new Date().toISOString()
-},
-{ merge: true }
-);
+return Math.round((e-s)/60000);
 
-document.getElementById("userInfo").innerText =
-"Welcome " + user.displayName;
-
-};
-
-document.getElementById("addEntry").onclick = () => {
-
-const appName =
-document.getElementById("appName").value;
-
-const start =
-document.getElementById("startTime").value;
-
-const end =
-document.getElementById("endTime").value;
-
-if(!appName || !start || !end){
-alert("Fill all fields");
-return;
 }
 
-const startParts = start.split(":");
-const endParts = end.split(":");
-
-const startMin =
-parseInt(startParts[0])*60 +
-parseInt(startParts[1]);
-
-const endMin =
-parseInt(endParts[0])*60 +
-parseInt(endParts[1]);
-
-const duration =
-endMin - startMin;
+function addRow(app,start,end,duration){
 
 const row =
 document.createElement("tr");
 
 row.innerHTML = `
-<td>${appName}</td>
+<td>${app}</td>
 <td>${start}</td>
 <td>${end}</td>
 <td>${duration}</td>
@@ -152,17 +118,137 @@ document
 .getElementById("tableBody")
 .appendChild(row);
 
-totalMinutes += duration;
+}
 
-document.getElementById("totalTime")
+async function loadEntries(uid){
+
+document.getElementById("tableBody").innerHTML="";
+
+let total=0;
+
+const snapshot =
+await getDocs(
+collection(
+db,
+"users",
+uid,
+"entries"
+)
+);
+
+snapshot.forEach((docItem)=>{
+
+const data =
+docItem.data();
+
+addRow(
+data.appName,
+data.startTime,
+data.endTime,
+data.duration
+);
+
+total += data.duration;
+
+});
+
+document.getElementById(
+"totalToday"
+).innerText =
+"Total Today: "+total+" Min";
+
+}
+
+document
+.getElementById("loginBtn")
+.onclick = async ()=>{
+
+const result =
+await signInWithPopup(
+auth,
+provider
+);
+
+const user =
+result.user;
+
+currentUser = user;
+
+await setDoc(
+doc(db,"users",user.uid),
+{
+name:user.displayName,
+email:user.email,
+currentDay:1,
+cycleNumber:1
+},
+{merge:true}
+);
+
+document
+.getElementById("userInfo")
 .innerText =
-"Total Today: " +
-totalMinutes +
-" Min";
+"Welcome "+user.displayName;
 
-document.getElementById("appName").value="";
-document.getElementById("startTime").value="";
-document.getElementById("endTime").value="";
+await loadEntries(user.uid);
+
+};
+
+document
+.getElementById("addBtn")
+.onclick = async ()=>{
+
+if(!currentUser){
+
+alert("Login First");
+
+return;
+
+}
+
+const appName =
+document
+.getElementById("appName")
+.value;
+
+const startTime =
+document
+.getElementById("startTime")
+.value;
+
+const endTime =
+document
+.getElementById("endTime")
+.value;
+
+const duration =
+durationMinutes(
+startTime,
+endTime
+);
+
+await addDoc(
+collection(
+db,
+"users",
+currentUser.uid,
+"entries"
+),
+{
+appName,
+startTime,
+endTime,
+duration
+}
+);
+
+await loadEntries(
+currentUser.uid
+);
+
+document
+.getElementById("appName")
+.value="";
 
 };
 
