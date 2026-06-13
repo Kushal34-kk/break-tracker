@@ -55,8 +55,12 @@ document.getElementById("loginBtn").onclick = async () => {
     doc(db, "users", user.uid),
     {
       name: user.displayName,
-      email: user.email
-    }
+      email: user.email,
+      currentDay: 1,
+      cycleNumber: 1,
+      cycleStartDate: new Date().toISOString()
+    },
+    { merge: true }
   );
 
   document.getElementById("userInfo").innerText =
