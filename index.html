@@ -1,39 +1,77 @@
 <!DOCTYPE html><html>
 <head>
-  <title>21-Day Break Tracker</title>
-</head><body><h1>21-Day Break Tracker</h1><button id="loginBtn">
+<title>21-Day Break Tracker</title><style>
+body{
+font-family:Arial,sans-serif;
+padding:20px;
+}
+
+input{
+margin:5px;
+padding:5px;
+}
+
+table{
+border-collapse:collapse;
+margin-top:20px;
+width:100%;
+}
+
+th,td{
+border:1px solid black;
+padding:8px;
+text-align:center;
+}
+
+button{
+padding:8px 15px;
+margin:5px;
+}
+</style></head><body><h1>21-Day Break Tracker</h1><button id="loginBtn">
 Login With Google
 </button><p id="userInfo">
 Not Logged In
-</p><script type="module">
+</p><hr><h2>Day 1</h2><input id="appName" placeholder="App Name"><input id="startTime" type="time"><input id="endTime" type="time"><button id="addEntry">
+Add Entry
+</button><table><thead>
+<tr>
+<th>App Name</th>
+<th>Start Time</th>
+<th>End Time</th>
+<th>Duration (Min)</th>
+</tr>
+</thead><tbody id="tableBody">
+</tbody></table><h3 id="totalTime">
+Total Today: 0 Min
+</h3><script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
 
 import {
-  getAuth,
-  GoogleAuthProvider,
-  signInWithPopup
+getAuth,
+GoogleAuthProvider,
+signInWithPopup
 } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
 
 import {
-  getFirestore,
-  doc,
-  setDoc
+getFirestore,
+doc,
+setDoc
 } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
 const firebaseConfig = {
 
-  apiKey: "AIzaSyCCbNxWraD-AgfcKHBSSwaWembq2zleiok",
+apiKey: "AIzaSyCCbNxWraD-AgfcKHBSSwaWembq2zleiok",
 
-  authDomain: "break-tracker-ea401.firebaseapp.com",
+authDomain: "break-tracker-ea401.firebaseapp.com",
 
-  projectId: "break-tracker-ea401",
+projectId: "break-tracker-ea401",
 
-  storageBucket: "break-tracker-ea401.firebasestorage.app",
+storageBucket: "break-tracker-ea401.firebasestorage.app",
 
-  messagingSenderId: "996988631234",
+messagingSenderId: "996988631234",
 
-  appId: "1:996988631234:web:0907369773652e8b84e35b"
+appId: "1:996988631234:web:0907369773652e8b84e35b"
 
 };
 
@@ -45,26 +83,87 @@ const db = getFirestore(app);
 
 const provider = new GoogleAuthProvider();
 
+let totalMinutes = 0;
+
 document.getElementById("loginBtn").onclick = async () => {
 
-  const result = await signInWithPopup(auth, provider);
+const result = await signInWithPopup(auth, provider);
 
-  const user = result.user;
+const user = result.user;
 
-  await setDoc(
-    doc(db, "users", user.uid),
-    {
-      name: user.displayName,
-      email: user.email,
-      currentDay: 1,
-      cycleNumber: 1,
-      cycleStartDate: new Date().toISOString()
-    },
-    { merge: true }
-  );
+await setDoc(
+doc(db, "users", user.uid),
+{
+name: user.displayName,
+email: user.email,
+currentDay: 1,
+cycleNumber: 1,
+cycleStartDate: new Date().toISOString()
+},
+{ merge: true }
+);
 
-  document.getElementById("userInfo").innerText =
-    "Welcome " + user.displayName;
+document.getElementById("userInfo").innerText =
+"Welcome " + user.displayName;
+
+};
+
+document.getElementById("addEntry").onclick = () => {
+
+const appName =
+document.getElementById("appName").value;
+
+const start =
+document.getElementById("startTime").value;
+
+const end =
+document.getElementById("endTime").value;
+
+if(!appName || !start || !end){
+alert("Fill all fields");
+return;
+}
+
+const startParts = start.split(":");
+const endParts = end.split(":");
+
+const startMin =
+parseInt(startParts[0])*60 +
+parseInt(startParts[1]);
+
+const endMin =
+parseInt(endParts[0])*60 +
+parseInt(endParts[1]);
+
+const duration =
+endMin - startMin;
+
+const row =
+document.createElement("tr");
+
+row.innerHTML = `
+<td>${appName}</td>
+<td>${start}</td>
+<td>${end}</td>
+<td>${duration}</td>
+`;
+
+document
+.getElementById("tableBody")
+.appendChild(row);
+
+totalMinutes += duration;
+
+document.getElementById("totalTime")
+.innerText =
+"Total Today: " +
+totalMinutes +
+" Min";
+
+document.getElementById("appName").value="";
+document.getElementById("startTime").value="";
+document.getElementById("endTime").value="";
+
 };
 
 </script></body>
