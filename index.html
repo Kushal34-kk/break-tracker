@@ -1,10 +1,68 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Break Tracker</title>
+  <title>21-Day Break Tracker</title>
 </head>
+
 <body>
-    <h1>21-Day Break Tracker</h1>
-    <p>App setup successful.</p>
+
+<h1>21-Day Break Tracker</h1>
+
+<button id="loginBtn">
+Login With Google
+</button>
+
+<p id="userInfo">
+Not Logged In
+</p>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+
+import {
+getAuth,
+GoogleAuthProvider,
+signInWithPopup
+} from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
+
+const firebaseConfig = {
+
+apiKey: "YOUR_API_KEY",
+
+authDomain: "YOUR_AUTH_DOMAIN",
+
+projectId: "YOUR_PROJECT_ID",
+
+storageBucket: "YOUR_STORAGE_BUCKET",
+
+messagingSenderId: "YOUR_SENDER_ID",
+
+appId: "YOUR_APP_ID"
+
+};
+
+const app = initializeApp(firebaseConfig);
+
+const auth = getAuth(app);
+
+const provider = new GoogleAuthProvider();
+
+document
+.getElementById("loginBtn")
+.onclick = async () => {
+
+const result =
+await signInWithPopup(auth, provider);
+
+document.getElementById("userInfo")
+.innerText =
+"Welcome " +
+result.user.displayName;
+
+};
+
+</script>
+
 </body>
 </html>
