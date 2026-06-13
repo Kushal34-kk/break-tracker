@@ -27,20 +27,19 @@ th,td{
 h2{
   margin-top:30px;
 }
-</style></head>
-<body><h1>21-Day Break Tracker</h1><button id="loginBtn">Login With Google</button>
+</style></head><body><h1>21-Day Break Tracker</h1><button id="loginBtn">Login With Google</button>
 
 <p id="userInfo">Not Logged In</p><hr><h2 id="dayHeading">Day 1</h2><input type="text" id="appName" placeholder="App Name"><input type="time" id="startTime"><input type="time" id="endTime"><button id="addBtn">Add Entry</button>
 
-<table><thead>
+<table>
+<thead>
 <tr>
 <th>App Name</th>
 <th>Start Time</th>
 <th>End Time</th>
 <th>Duration (Min)</th>
 </tr>
-</thead><tbody id="tableBody">
-</tbody></table><h3 id="totalToday">
+</thead><tbody id="tableBody"></tbody></table><h3 id="totalToday">
 Total Today: 0 Min
 </h3><script type="module">
 
@@ -48,208 +47,178 @@ import { initializeApp }
 from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
 
 import {
-getAuth,
-GoogleAuthProvider,
-signInWithPopup
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup
 }
 from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
 
 import {
-getFirestore,
-doc,
-setDoc,
-collection,
-addDoc,
-getDocs
+  getFirestore,
+  doc,
+  setDoc,
+  collection,
+  addDoc,
+  getDocs
 }
 from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
 const firebaseConfig = {
-
-apiKey: "AIzaSyCCbNxWraD-AgfcKHBSSwaWembq2zleiok",
-
-authDomain: "break-tracker-ea401.firebaseapp.com",
-
-projectId: "break-tracker-ea401",
-
-storageBucket: "break-tracker-ea401.firebasestorage.app",
-
-messagingSenderId: "996988631234",
-
-appId: "1:996988631234:web:0907369773652e8b84e35b"
-
+  apiKey: "AIzaSyCCbNxWraD-AgfcKHBSSwaWembq2zleiok",
+  authDomain: "break-tracker-ea401.firebaseapp.com",
+  projectId: "break-tracker-ea401",
+  storageBucket: "break-tracker-ea401.firebasestorage.app",
+  messagingSenderId: "996988631234",
+  appId: "1:996988631234:web:0907369773652e8b84e35b"
 };
 
 const app = initializeApp(firebaseConfig);
-
 const auth = getAuth(app);
-
 const db = getFirestore(app);
-
 const provider = new GoogleAuthProvider();
 
 let currentUser = null;
 
 function durationMinutes(start,end){
 
-const s =
-new Date("2000-01-01T"+start);
+  const s = new Date("2000-01-01T" + start);
+  const e = new Date("2000-01-01T" + end);
 
-const e =
-new Date("2000-01-01T"+end);
-
-return Math.round((e-s)/60000);
-
+  return Math.round((e - s) / 60000);
 }
 
 function addRow(app,start,end,duration){
 
-const row =
-document.createElement("tr");
+  const row = document.createElement("tr");
 
-row.innerHTML = `
-<td>${app}</td>
-<td>${start}</td>
-<td>${end}</td>
-<td>${duration}</td>
-`;
+  row.innerHTML = `
+    <td>${app}</td>
+    <td>${start}</td>
+    <td>${end}</td>
+    <td>${duration}</td>
+  `;
 
-document
-.getElementById("tableBody")
-.appendChild(row);
-
+  document
+    .getElementById("tableBody")
+    .appendChild(row);
 }
 
 async function loadEntries(uid){
 
-document.getElementById("tableBody").innerHTML="";
+  document.getElementById("tableBody").innerHTML = "";
 
-let total=0;
+  let total = 0;
 
-const snapshot =
-await getDocs(
-collection(
-db,
-"users",
-uid,
-"entries"
-)
-);
+  const snapshot = await getDocs(
+    collection(
+      db,
+      "users",
+      uid,
+      "entries"
+    )
+  );
 
-snapshot.forEach((docItem)=>{
+  snapshot.forEach((docItem)=>{
 
-const data =
-docItem.data();
+    const data = docItem.data();
 
-addRow(
-data.appName,
-data.startTime,
-data.endTime,
-data.duration
-);
+    addRow(
+      data.appName,
+      data.startTime,
+      data.endTime,
+      data.duration
+    );
 
-total += data.duration;
+    total += data.duration;
+  });
 
-});
-
-document.getElementById(
-"totalToday"
-).innerText =
-"Total Today: "+total+" Min";
-
+  document.getElementById(
+    "totalToday"
+  ).innerText =
+  "Total Today: " + total + " Min";
 }
 
 document
 .getElementById("loginBtn")
 .onclick = async ()=>{
 
-const result =
-await signInWithPopup(
-auth,
-provider
-);
+  const result =
+  await signInWithPopup(
+    auth,
+    provider
+  );
 
-const user =
-result.user;
+  const user = result.user;
 
-currentUser = user;
+  currentUser = user;
 
-await setDoc(
-doc(db,"users",user.uid),
-{
-name:user.displayName,
-email:user.email,
-currentDay:1,
-cycleNumber:1
-},
-{merge:true}
-);
+  await setDoc(
+    doc(db,"users",user.uid),
+    {
+      name:user.displayName,
+      email:user.email,
+      currentDay:1,
+      cycleNumber:1
+    },
+    {merge:true}
+  );
 
-document
-.getElementById("userInfo")
-.innerText =
-"Welcome "+user.displayName;
+  document
+  .getElementById("userInfo")
+  .innerText =
+  "Welcome " + user.displayName;
 
-await loadEntries(user.uid);
-
+  await loadEntries(user.uid);
 };
 
 document
 .getElementById("addBtn")
 .onclick = async ()=>{
 
-if(!currentUser){
+  if(!currentUser){
+    alert("Login First");
+    return;
+  }
 
-alert("Login First");
+  const appName =
+  document
+  .getElementById("appName")
+  .value;
 
-return;
+  const startTime =
+  document
+  .getElementById("startTime")
+  .value;
 
-}
+  const endTime =
+  document
+  .getElementById("endTime")
+  .value;
 
-const appName =
-document
-.getElementById("appName")
-.value;
+  const duration =
+  durationMinutes(
+    startTime,
+    endTime
+  );
 
-const startTime =
-document
-.getElementById("startTime")
-.value;
+  await addDoc(
+    collection(
+      db,
+      "users",
+      currentUser.uid,
+      "entries"
+    ),
+    {
+      appName,
+      startTime,
+      endTime,
+      duration
+    }
+  );
 
-const endTime =
-document
-.getElementById("endTime")
-.value;
+  await loadEntries(currentUser.uid);
 
-const duration =
-durationMinutes(
-startTime,
-endTime
-);
-
-await addDoc(
-collection(
-db,
-"users",
-currentUser.uid,
-"entries"
-),
-{
-appName,
-startTime,
-endTime,
-duration
-}
-);
-
-await loadEntries(
-currentUser.uid
-);
-
-document
-.getElementById("appName")
-.value="";
-
+  document.getElementById("appName").value = "";
 };
 
 </script></body>
